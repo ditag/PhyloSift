@@ -354,6 +354,11 @@ sub write_sequence_taxa_summary {
 
 		my $readsummary = sum_taxon_levels( placements => $placements->{$qname} );
 		foreach my $taxon_id ( sort { $readsummary->{$b} <=> $readsummary->{$a} } keys %{$readsummary} ) {
+#######
+#	This line is where code gets sorted by weight of evidence;
+#	Until then, it is unsorted
+#	Next step: check sum_taxon_levels
+#######
 			my $blah = $taxon_id || next;
 			my ( $taxon_name, $taxon_level, $tid ) = get_taxon_info( taxon => $taxon_id );
 			$taxon_level = "Unknown" unless defined($taxon_level);
@@ -623,17 +628,26 @@ sub write_confidence_intervals {
 }
 
 sub sum_taxon_levels {
+#####
+#	This function traverses the phylogeny of each assignment
+#	CHANGE THE NAME of the cur_tid to include all its ancestry
+#####
 	my %args       = @_;
 	my $placements = $args{placements} || miss("placements");
 	my %summarized = ();
 	foreach my $taxon_id ( keys %$placements ) {
 		my $cur_tid = $taxon_id;
+		my $full_tax = $taxon_id;			##added
+		my $score = 0;						##added
 		while ( defined($cur_tid) ) {
-			$summarized{$cur_tid} = 0 unless defined( $summarized{$cur_tid} );
-			$summarized{$cur_tid} += $placements->{$taxon_id};
+#			$summarized{$cur_tid} = 0 unless defined( $summarized{$cur_tid} );  ##erased
+#			$summarized{$cur_tid} += $placements->{$taxon_id};					##erased
+			$score += $placements->{$taxon_id};			##added
 			last if defined( $parent{$cur_tid}[0] ) && $parent{$cur_tid}[0] == $cur_tid;
 			$cur_tid = $parent{$cur_tid}[0];
+			$full_tax = "$cur_tid;$full_tax";		##added
 		}
+		$summarized{$full_tax} = $score;			##added
 	}
 	return \%summarized;
 }
